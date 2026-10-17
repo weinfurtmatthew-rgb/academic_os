@@ -19,6 +19,10 @@ there is no build step. The site lives in `public/`.
 2. Leave the build command empty; the deploy command is `npx wrangler deploy`.
 3. Deploy. It's served at `https://academic-os.<your-subdomain>.workers.dev/`.
 
+Alternative, no Worker config involved: **Create** → **Pages** tab → connect
+this repo, framework preset **None**, build command empty, build output
+directory `public`.
+
 Or drag-and-drop: **Create** → **Upload static files**, and drop the contents
 of `public/`.
 
