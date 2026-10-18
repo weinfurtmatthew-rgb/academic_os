@@ -2,8 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "academic-os",
   "compatibility_date": "2025-09-01",
+  // `npx wrangler deploy` runs this first, so Cloudflare needs no build settings.
+  "build": {
+    "command": "npm ci && npm run build"
+  },
   "assets": {
-    "directory": "./public",
+    "directory": "./out",
     "not_found_handling": "404-page"
   }
 }

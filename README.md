@@ -1,46 +1,95 @@
-# Academic OS
+# Academic OS 🎓
 
-Offline-first academic command center (courses, assignments, exams, notes,
-flashcards, grades, study planning). This repo is a pre-built static export —
-there is no build step. The site lives in `public/`.
+Your offline-first academic command center — courses, assignments, exams, notes, grades, study planning, calendar and analytics in one fast, installable web app.
 
-> **The site must be served from the root of a domain** (e.g.
-> `academic-os.pages.dev` or `study.example.com`), not a sub-path like
-> `user.github.io/repo/`. All asset and route paths are absolute (`/_next/...`,
-> `/courses/`, the service worker, the manifest).
+**No backend. No account. No cloud.** Everything lives in your browser (IndexedDB + LocalStorage) and keeps working with zero internet.
 
-## Cloudflare (recommended)
+## ✨ Modules
 
-`wrangler.jsonc` deploys `public/` as a static-assets Worker, with a fixed
-`compatibility_date` (Cloudflare rejects dates later than its own today).
+| Module | What it does |
+|---|---|
+| **Dashboard** | Today widget, 14-day deadline timeline, weekly progress, course overview |
+| **Courses** | Grid/list views · per-course hub with Assignments / Lectures / Exams / Notes / Resources tabs |
+| **Assignments** | List · Kanban board (drag & drop) · Calendar · Timeline, with course/due/priority/status filters |
+| **Lectures** | Date-grouped log, summaries, rich markdown notes, image & PDF attachments |
+| **Notes** | Notion-style editor: headings, checklists, tables, code, images, **KaTeX math** (`$…$`), `[[internal links]]` between notes, instant search |
+| **Exams** | Countdown cards, weight %, prep status → progress bar |
+| **Grades** | Inline grade entry, weighted course averages, GPA (4/5/10 scale), semester average, GPA trend |
+| **Study Planner** | Daily / weekly / monthly planning, total & weekly hours, study streak 🔥 |
+| **Calendar** | Assignments + exams + sessions unified · day/week/month · drag items to reschedule |
+| **Analytics** | Completion rate, tasks/week, daily & weekly study hours, course performance, GPA trend |
+| **Search** | ⌘K / Ctrl+K palette across everything |
+| **Settings** | Light/dark/system theme, GPA scale, semester dates, JSON export/import, reset |
 
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Import a
-   repository**, pick this repo.
-2. Leave the build command empty; the deploy command is `npx wrangler deploy`.
-3. Deploy. It's served at `https://academic-os.<your-subdomain>.workers.dev/`.
+Every change **saves automatically** — there is no save button anywhere.
 
-Alternative, no Worker config involved: **Create** → **Pages** tab → connect
-this repo, framework preset **None**, build command empty, build output
-directory `public`.
+## 🚀 Run it
 
-Or drag-and-drop: **Create** → **Upload static files**, and drop the contents
-of `public/`.
+Requires Node 18+.
 
-## GitHub Pages
-
-The workflow at `.github/workflows/deploy.yml` publishes the site on every
-push to `main` (or run it manually from the Actions tab).
-
-1. Repo **Settings** → **Pages** → Source: **GitHub Actions**.
-2. Because a project site lives at `https://<user>.github.io/<repo>/` (a
-   sub-path), add a **custom domain** in the same Pages settings so the app is
-   served from a domain root. Without one, styles, scripts and navigation break.
-
-`.nojekyll` is included so GitHub Pages serves the `_next/` folder.
-
-## Local preview
-
-```sh
-python3 -m http.server 8080 -d public
-# open http://localhost:8080
+```bash
+npm install
+npm run dev          # → http://localhost:3000
 ```
+
+### Production / static build
+
+```bash
+npm run build        # outputs a fully static site to ./out
+npx serve out        # serve it from any static host
+```
+
+The `out/` folder can be dropped onto GitHub Pages, Netlify, Vercel, an S3 bucket, a Raspberry Pi — anything that serves files.
+
+The site must be served from the **root of a domain** (e.g. `academic-os.pages.dev`), not a sub-path like `user.github.io/repo/` — asset and route paths are absolute.
+
+## ☁️ Deploying
+
+### Cloudflare (current host)
+
+`wrangler.jsonc` does everything: `npx wrangler deploy` runs `npm ci && npm run build` and uploads `out/` as a static-assets Worker. In the Cloudflare dashboard (**Workers & Pages → Create → Import a repository**) leave the build command empty and keep the default deploy command. Every push to `main` redeploys.
+
+`compatibility_date` is pinned in `wrangler.jsonc`; Cloudflare rejects dates later than its own "today".
+
+### GitHub Pages (optional)
+
+`.github/workflows/deploy.yml` builds and publishes `out/`. It only runs manually: set **Settings → Pages → Source** to **GitHub Actions**, add a custom domain (see the root-path note above), then run the workflow from the **Actions** tab.
+
+## 📲 Install as an app (PWA)
+
+1. Open the site **once while online** (production build — the service worker is disabled in `npm run dev`).
+2. Install it:
+   - **Desktop Chrome/Edge:** click the install icon in the address bar.
+   - **Android Chrome:** menu → *Add to Home screen*.
+   - **iOS Safari:** Share → *Add to Home Screen*.
+3. Done — it launches full-screen with its own icon and **works fully offline**.
+
+## 💾 Your data
+
+- Stored locally: IndexedDB (entities) + LocalStorage (settings). Refreshing, restarting or going offline loses nothing.
+- **Settings → Export JSON** for backups; **Import JSON** merges a backup back in (by id).
+- *Clearing browser site data deletes everything* — export first.
+- New here? **Settings → Load sample data** (or the button on the empty dashboard) fills the app with a realistic semester to explore.
+
+## 🛠 Stack
+
+Next.js 14 (App Router, static export) · TypeScript (strict) · TailwindCSS · Zustand · IndexedDB · marked + KaTeX + DOMPurify for the editor · custom shadcn-style UI components · hand-rolled SVG/CSS charts · service worker for offline.
+
+## ⌨️ Tips
+
+- `⌘K` / `Ctrl+K` — search everything
+- Type `[[Note title]]` inside any note or lecture to link notes together
+- `$E=mc^2$` inline math, `$$…$$` block math
+- Drag assignment cards between Kanban columns; drag calendar chips between days
+- Tap the round checkbox on any task row to complete it instantly
+
+
+## New in this build
+
+- **Study screen** (`/study`) — start a live session with a running timer, pause/break, a notes editor, an embedded **YouTube** music player (paste any video, playlist, or live-stream URL), an energy/mood check, and a "related materials" rail linking the course's PDFs, due assignments and due flashcards. The session survives a refresh and logs real minutes + mood when you finish.
+- **Flashcards** (`/flashcards`) — spaced-repetition (SM-2-lite) with Again/Hard/Good/Easy grading, markdown + KaTeX on both sides, keyboard review (space to flip, 1-4 to grade), per-course filtering and a full card manager.
+- **PDF annotation** — open any PDF attached to a lecture or added as a course resource and mark it up with pen, highlighter, sticky notes and an eraser (with undo/redo, zoom and page navigation). Annotations auto-save to this device and stay with the file. Fully offline.
+- **Class schedule** (`/schedule`) — a weekly timetable built from each course's meeting times, with a live "now" line on the desktop grid and a day-picker on mobile.
+- **Instructor contact & office hours** — every course now stores the instructor's email, phone, office and office hours, plus its weekly meeting pattern, shown on the course page and editable in the course dialog.
+
+Music playback streams from YouTube so it needs an internet connection; everything else (including PDF annotation) works fully offline.
