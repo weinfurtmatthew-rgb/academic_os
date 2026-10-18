@@ -7,7 +7,7 @@ import {
   ASSIGNMENT_STATUSES, PRIORITIES,
   type Assignment, type CalItem, type Priority,
 } from '@/lib/types';
-import { cn, daysUntil, fmtDate, relDue } from '@/lib/utils';
+import { assignmentDue, cn, daysUntil, fmtDate, isOverdue, isTurnedIn, relDue } from '@/lib/utils';
 import { Button, EmptyState, Select, Tabs } from '@/components/ui';
 import { AssignmentRow, PriorityBadge, StatusBadge } from '@/components/shared';
 import { AssignmentForm } from '@/components/forms';
@@ -47,7 +47,7 @@ export default function AssignmentsPage() {
       if (fPriority !== 'all' && a.priority !== fPriority) return false;
       if (fDue !== 'all') {
         const d = daysUntil(a.dueDate);
-        if (fDue === 'overdue' && !(d < 0 && a.status !== 'completed')) return false;
+        if (fDue === 'overdue' && !isOverdue(a)) return false;
         if (fDue === 'today' && d !== 0) return false;
         if (fDue === 'week' && (d < 0 || d > 7)) return false;
         if (fDue === 'month' && (d < 0 || d > 31)) return false;
@@ -59,8 +59,8 @@ export default function AssignmentsPage() {
   const sorted = useMemo(
     () =>
       [...filtered].sort((a, b) => {
-        const ac = a.status === 'completed' ? 1 : 0;
-        const bc = b.status === 'completed' ? 1 : 0;
+        const ac = isTurnedIn(a) ? 1 : 0;
+        const bc = isTurnedIn(b) ? 1 : 0;
         if (ac !== bc) return ac - bc;
         return a.dueDate.localeCompare(b.dueDate);
       }),
@@ -72,7 +72,7 @@ export default function AssignmentsPage() {
       filtered.map((a) => ({
         id: a.id, kind: 'assignment', title: a.title, date: a.dueDate,
         color: courses.find((c) => c.id === a.courseId)?.color ?? '#5B5BD6',
-        courseId: a.courseId, done: a.status === 'completed',
+        courseId: a.courseId, done: isTurnedIn(a),
       })),
     [filtered, courses],
   );
@@ -84,10 +84,10 @@ export default function AssignmentsPage() {
       { label: 'Today', items: [], tone: 'warn' },
       { label: 'This week', items: [] },
       { label: 'Later', items: [] },
-      { label: 'Completed', items: [] },
+      { label: 'Turned in', items: [] },
     ];
     for (const a of sorted) {
-      if (a.status === 'completed') groups[4].items.push(a);
+      if (isTurnedIn(a)) groups[4].items.push(a);
       else {
         const d = daysUntil(a.dueDate);
         if (d < 0) groups[0].items.push(a);
@@ -100,7 +100,7 @@ export default function AssignmentsPage() {
   }, [sorted]);
 
   const openAssignment = assignments.find((a) => a.id === openId) ?? null;
-  const open = assignments.filter((a) => a.status !== 'completed').length;
+  const open = assignments.filter((a) => !isTurnedIn(a)).length;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -213,7 +213,7 @@ export default function AssignmentsPage() {
                             <span className="min-w-0 flex-1">
                               <span className={cn('block truncate text-sm font-semibold', a.status === 'completed' && 'text-muted-foreground line-through')}>{a.title}</span>
                               <span className="block text-xs text-muted-foreground">
-                                {course?.code} · {fmtDate(a.dueDate)} · {relDue(a.dueDate)}
+                                {course?.code} · {isTurnedIn(a) ? assignmentDue(a) : `${fmtDate(a.dueDate)} · ${relDue(a.dueDate)}`}
                               </span>
                             </span>
                             <span className="flex shrink-0 gap-1.5">

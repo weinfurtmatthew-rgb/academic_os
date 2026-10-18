@@ -69,6 +69,23 @@ export function relDue(iso: string): string {
   return `Due ${fmtDate(iso)}`;
 }
 
+/** Submitted or completed: nothing left to do before the deadline. */
+export function isTurnedIn(a: Pick<Assignment, 'status'>): boolean {
+  return a.status === 'submitted' || a.status === 'completed';
+}
+
+/** Past its due date and not yet turned in. */
+export function isOverdue(a: Pick<Assignment, 'status' | 'dueDate'>): boolean {
+  return !isTurnedIn(a) && daysUntil(a.dueDate) < 0;
+}
+
+/** Due-date label that respects status, so turned-in work never reads as overdue. */
+export function assignmentDue(a: Pick<Assignment, 'status' | 'dueDate' | 'completedAt'>): string {
+  if (a.status === 'completed') return a.completedAt ? `Done ${fmtDate(a.completedAt)}` : `Done · due ${fmtDate(a.dueDate)}`;
+  if (a.status === 'submitted') return `Submitted · due ${fmtDate(a.dueDate)}`;
+  return relDue(a.dueDate);
+}
+
 export function toLocalInput(iso: string): string {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, '0');

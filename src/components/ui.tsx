@@ -75,20 +75,24 @@ export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: st
 }
 
 const fieldClass =
-  'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 ' +
+  'rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 ' +
   'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow';
 
+/** Fields fill their container unless the caller sets a base width (`w-20`). `cn` can't
+ *  resolve two width classes, and `w-full` would win over the caller's. */
+const fieldWidth = (className?: string) => (/(^|\s)w-/.test(className ?? '') ? undefined : 'w-full');
+
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(fieldClass, className)} {...props} />;
+  return <input className={cn(fieldClass, fieldWidth(className), className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(fieldClass, 'min-h-[88px] resize-y', className)} {...props} />;
+  return <textarea className={cn(fieldClass, fieldWidth(className), 'min-h-[88px] resize-y', className)} {...props} />;
 }
 
 export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn(fieldClass, 'appearance-none bg-no-repeat pr-8', className)} style={{ backgroundImage: 'var(--select-chevron)', backgroundPosition: 'right 0.6rem center', backgroundSize: '0.85rem' }} {...props}>
+    <select className={cn(fieldClass, fieldWidth(className), 'appearance-none bg-no-repeat pr-8', className)} style={{ backgroundImage: 'var(--select-chevron)', backgroundPosition: 'right 0.6rem center', backgroundSize: '0.85rem' }} {...props}>
       {children}
     </select>
   );

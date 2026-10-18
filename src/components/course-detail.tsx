@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, ExternalLink, FileDown, Link2, Mail, MapPin, Paperclip, Pencil, Phone, Play, Plus, Trash2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { DAYS, type Assignment, type Course, type Exam, type Lecture, type Resource } from '@/lib/types';
-import { cn, courseGrade, fmtDate, hexToRgba, letterGrade, readFileAsDataURL, uid } from '@/lib/utils';
+import { cn, courseGrade, fmtDate, hexToRgba, isTurnedIn, letterGrade, readFileAsDataURL, uid } from '@/lib/utils';
 import { Badge, Button, Card, EmptyState, Input, Progress, Stat, Tabs } from '@/components/ui';
 import { AssignmentRow, ExamCard } from '@/components/shared';
 import { AssignmentForm, CourseForm, ExamForm, LectureForm } from '@/components/forms';
@@ -44,7 +44,7 @@ export function CourseDetail({ course, onBack }: { course: Course; onBack: () =>
 
   const openA = assignments.find((x) => x.id === openAId) ?? null;
   const grade = courseGrade(course.id, assignments, exams);
-  const done = mine.assignments.filter((a) => a.status === 'completed').length;
+  const done = mine.assignments.filter(isTurnedIn).length;
   const progress = mine.assignments.length ? Math.round((done / mine.assignments.length) * 100) : 0;
 
   const addLink = () => {

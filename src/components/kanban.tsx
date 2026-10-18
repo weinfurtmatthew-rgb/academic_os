@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { ASSIGNMENT_STATUSES, type Assignment, type AssignmentStatus } from '@/lib/types';
-import { cn, hexToRgba, relDue } from '@/lib/utils';
+import { assignmentDue, cn, hexToRgba } from '@/lib/utils';
 import { Badge, Select } from '@/components/ui';
 import { PriorityBadge } from '@/components/shared';
 
@@ -92,7 +92,7 @@ export function KanbanBoard({
                           )}
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             <PriorityBadge priority={a.priority} />
-                            <span className="text-[11px] font-medium text-muted-foreground">{relDue(a.dueDate)}</span>
+                            <span className="text-[11px] font-medium text-muted-foreground">{assignmentDue(a)}</span>
                           </div>
                           {/* touch fallback: move without dragging */}
                           <div className="mt-2 sm:hidden" onClick={(e) => e.stopPropagation()}>

@@ -180,7 +180,7 @@ export default function NotesPage() {
         {!open && <h1 className="font-display text-2xl font-extrabold tracking-tight">Notes</h1>}
       </div>
       {/* mobile: one pane at a time; desktop: split */}
-      <div className="grid h-full gap-5 lg:grid-cols-[320px,1fr]">
+      <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-[320px,minmax(0,1fr)]">
         <div className={cn('h-full min-h-0', open && 'hidden lg:block')}>{ListPane}</div>
         <div className={cn('h-full min-h-0', !open && 'hidden lg:block')}>{EditorPane}</div>
       </div>

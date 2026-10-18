@@ -1,12 +1,12 @@
 'use client';
 
-import { CalendarClock, CheckCircle2 } from 'lucide-react';
+import { CalendarClock, Check, CheckCircle2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import {
   ASSIGNMENT_STATUSES, EXAM_STATUSES,
   type Assignment, type AssignmentStatus, type Exam, type ExamStatus, type Priority, type StudySession,
 } from '@/lib/types';
-import { cn, daysUntil, fmtDate, fmtTime, hexToRgba, relDue } from '@/lib/utils';
+import { assignmentDue, cn, daysUntil, fmtDate, fmtTime, hexToRgba, isOverdue, isTurnedIn, relDue } from '@/lib/utils';
 import { Badge } from '@/components/ui';
 
 /* --------------------------------- badges ---------------------------------- */
@@ -60,8 +60,9 @@ export function AssignmentRow({
 }: { a: Assignment; onOpen: () => void; showCourse?: boolean }) {
   const put = useStore((s) => s.put);
   const course = useStore((s) => s.courses.find((c) => c.id === a.courseId));
-  const overdue = a.status !== 'completed' && daysUntil(a.dueDate) < 0;
+  const overdue = isOverdue(a);
   const done = a.status === 'completed';
+  const submitted = a.status === 'submitted';
 
   return (
     <div
@@ -70,16 +71,22 @@ export function AssignmentRow({
     >
       <button
         aria-label={done ? 'Mark as not completed' : 'Mark as completed'}
+        title={submitted ? 'Submitted — click to mark completed' : undefined}
         onClick={(e) => {
           e.stopPropagation();
           put('assignments', { ...a, status: done ? 'in_progress' : 'completed' });
         }}
         className={cn(
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-          done ? 'border-success bg-success text-success-foreground' : 'border-muted-foreground/40 hover:border-success',
+          done
+            ? 'border-success bg-success text-success-foreground'
+            : submitted
+              ? 'border-violet-500 text-violet-500 hover:border-success hover:text-success'
+              : 'border-muted-foreground/40 hover:border-success',
         )}
       >
         {done && <CheckCircle2 className="h-4 w-4" />}
+        {submitted && <Check className="h-3 w-3" strokeWidth={3} />}
       </button>
       <div className="min-w-0 flex-1">
         <p className={cn('truncate text-sm font-semibold', done && 'text-muted-foreground line-through')}>{a.title}</p>
@@ -89,7 +96,7 @@ export function AssignmentRow({
           )}
           <span className={cn('inline-flex items-center gap-1', overdue && 'font-semibold text-destructive')}>
             <CalendarClock className="h-3 w-3" />
-            {relDue(a.dueDate)} · {fmtDate(a.dueDate)}
+            {isTurnedIn(a) ? assignmentDue(a) : `${relDue(a.dueDate)} · ${fmtDate(a.dueDate)}`}
           </span>
           {a.grade !== null && <span className="font-semibold text-foreground">{a.grade}%</span>}
         </div>

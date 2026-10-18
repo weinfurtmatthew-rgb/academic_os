@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CalendarClock, Check, CheckCircle2, Clock, ExternalLink, FileDown, FileText,
   Flag, GraduationCap, Hourglass, LinkIcon, Paperclip, Pencil, Trash2, Upload, X,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { ASSIGNMENT_STATUSES, type Assignment, type AssignmentStatus, type Attachment } from '@/lib/types';
-import { cn, daysUntil, fmtDate, fmtTime, hexToRgba, letterGrade, readFileAsDataURL, relDue, uid } from '@/lib/utils';
+import { cn, fmtDate, fmtTime, hexToRgba, isOverdue, isTurnedIn, letterGrade, readFileAsDataURL, relDue, uid } from '@/lib/utils';
 import { Button, Input } from '@/components/ui';
 import { PriorityBadge } from '@/components/shared';
 import { AssignmentForm } from '@/components/forms';
@@ -30,8 +30,21 @@ export function AssignmentDetail({
 
   const course = courses.find((c) => c.id === a.courseId);
   const accent = course?.color ?? 'hsl(var(--primary))';
-  const overdue = a.status !== 'completed' && daysUntil(a.dueDate) < 0;
+  const overdue = isOverdue(a);
   const done = a.status === 'completed';
+  const submitted = a.status === 'submitted';
+
+  // Escape backs out of a pending delete, then closes; nested dialogs handle their own Escape.
+  useEffect(() => {
+    if (edit || annotate) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (confirmDel) setConfirmDel(false);
+      else onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [edit, annotate, confirmDel, onClose]);
 
   const setStatus = (status: AssignmentStatus) => put('assignments', { ...a, status });
 
@@ -96,7 +109,7 @@ export function AssignmentDetail({
             </h1>
             <p className={cn('mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold', overdue ? 'text-destructive' : 'text-muted-foreground')}>
               <CalendarClock className="h-4 w-4" />
-              Due {fmtDate(a.dueDate)} at {fmtTime(a.dueDate)} · {relDue(a.dueDate)}
+              Due {fmtDate(a.dueDate)} at {fmtTime(a.dueDate)}{!isTurnedIn(a) && ` · ${relDue(a.dueDate)}`}
             </p>
           </div>
 
@@ -126,9 +139,13 @@ export function AssignmentDetail({
             <Fact icon={Hourglass} label="Estimated" value={`${a.estimatedHours} h`} />
             <Fact
               icon={Clock}
-              label={done ? 'Completed' : 'Time left'}
-              value={done ? (a.completedAt ? fmtDate(a.completedAt) : '—') : overdue ? 'Overdue' : relDue(a.dueDate)}
-              tone={overdue && !done ? 'danger' : undefined}
+              label={done ? 'Completed' : submitted ? 'Submitted' : 'Time left'}
+              value={
+                done ? (a.completedAt ? fmtDate(a.completedAt) : '—')
+                : submitted ? (a.grade === null ? 'Awaiting grade' : 'Graded')
+                : overdue ? 'Overdue' : relDue(a.dueDate)
+              }
+              tone={overdue ? 'danger' : undefined}
             />
             <Fact
               icon={GraduationCap}
@@ -172,7 +189,7 @@ export function AssignmentDetail({
               </p>
             )}
 
-            {a.submissionUrl && !done && (
+            {a.submissionUrl && !isTurnedIn(a) && (
               <Button
                 className="mt-3 w-full sm:w-auto"
                 onClick={() => put('assignments', { ...a, status: 'submitted' })}

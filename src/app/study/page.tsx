@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import type { StudySession } from '@/lib/types';
-import { cn, daysUntil, fmtTime, hexToRgba, isSameDay, relDue, studyStreak, uid } from '@/lib/utils';
+import { cn, daysUntil, fmtTime, hexToRgba, isSameDay, isTurnedIn, relDue, studyStreak, uid } from '@/lib/utils';
 import { isDue } from '@/lib/srs';
 import { Button, Card, Dialog, EmptyState, Input, Progress, Select, Stat } from '@/components/ui';
 import { SessionRow } from '@/components/shared';
@@ -154,7 +154,7 @@ export default function StudyPage() {
       }
     }
     const due = assignments
-      .filter((a) => a.courseId === session.courseId && a.status !== 'completed')
+      .filter((a) => a.courseId === session.courseId && !isTurnedIn(a))
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
       .slice(0, 3);
     const cards = flashcards.filter((f) => f.courseId === session.courseId && isDue(f)).length;

@@ -177,6 +177,7 @@ export default function PlannerPage() {
             if (s) setEdit(s);
           }}
           onAddAt={planAt}
+          addLabel="Plan study session"
           onMove={(it, day) => {
             const s = sessions.find((x) => x.id === it.id);
             if (!s) return;

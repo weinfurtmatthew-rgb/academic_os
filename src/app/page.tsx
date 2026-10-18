@@ -8,7 +8,7 @@ import { useStore } from '@/lib/store';
 import type { Assignment, Exam, StudySession } from '@/lib/types';
 import {
   addDays, cn, courseGrade, daysUntil, fmtDate, fmtTime, hexToRgba,
-  hoursBetween, isSameDay, letterGrade, overallGPA, relDue, startOfWeek, studyStreak,
+  hoursBetween, isSameDay, isTurnedIn, letterGrade, overallGPA, relDue, startOfWeek, studyStreak,
 } from '@/lib/utils';
 import { Button, Card, CardHeader, EmptyState, Progress, Stat } from '@/components/ui';
 import { AssignmentRow, ExamStatusBadge, PriorityBadge, SessionRow } from '@/components/shared';
@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   const today = useMemo(() => {
     const dueToday = assignments
-      .filter((a) => a.status !== 'completed' && isSameDay(a.dueDate, now))
+      .filter((a) => !isTurnedIn(a) && isSameDay(a.dueDate, now))
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     const examsToday = exams.filter((e) => isSameDay(e.date, now));
     const sessionsToday = sessions
@@ -46,7 +46,7 @@ export default function DashboardPage() {
     const horizon = addDays(new Date(), 14).toISOString();
     const items = [
       ...assignments
-        .filter((a) => a.status !== 'completed' && a.dueDate <= horizon)
+        .filter((a) => !isTurnedIn(a) && a.dueDate <= horizon)
         .map((a) => ({ kind: 'assignment' as const, date: a.dueDate, a })),
       ...exams
         .filter((e) => e.status !== 'completed' && e.date >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString() && e.date <= horizon)
@@ -59,12 +59,9 @@ export default function DashboardPage() {
   const week = useMemo(() => {
     const start = startOfWeek(new Date());
     const end = addDays(start, 7);
-    const done = assignments.filter(
-      (a) => a.completedAt && a.completedAt >= start.toISOString() && a.completedAt < end.toISOString(),
-    ).length;
-    const open = assignments.filter((a) => a.status !== 'completed' && a.dueDate >= start.toISOString() && a.dueDate < end.toISOString()).length;
+    const due = assignments.filter((a) => a.dueDate >= start.toISOString() && a.dueDate < end.toISOString());
     const hours = hoursBetween(sessions, start, end);
-    return { done, open, hours, target: done + open };
+    return { done: due.filter(isTurnedIn).length, total: due.length, hours };
   }, [assignments, sessions]);
 
   const openA = assignments.find((x) => x.id === openAId) ?? null;
@@ -123,7 +120,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="GPA" value={gpa === null ? '—' : gpa.toFixed(2)} sub={`${settings.gpaScale}.0 scale`} accent />
-        <Stat label="Open tasks" value={assignments.filter((a) => a.status !== 'completed').length} sub={`${today.dueToday.length} due today`} />
+        <Stat label="Open tasks" value={assignments.filter((a) => !isTurnedIn(a)).length} sub={`${today.dueToday.length} due today`} />
         <Stat label="Courses" value={courses.length} />
         <Stat label="Study hrs this week" value={week.hours.toFixed(1)} sub={streak > 0 ? `${streak}-day streak` : 'log a session'} />
       </div>
@@ -182,12 +179,15 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div>
               <div className="mb-1.5 flex items-baseline justify-between text-sm">
-                <span className="font-semibold">Tasks completed</span>
+                <span className="font-semibold">Due this week</span>
                 <span className="font-display text-lg font-extrabold">
-                  {week.done}<span className="text-sm font-semibold text-muted-foreground">/{week.target}</span>
+                  {week.done}<span className="text-sm font-semibold text-muted-foreground">/{week.total}</span>
                 </span>
               </div>
-              <Progress value={week.target ? (week.done / week.target) * 100 : 0} />
+              <Progress value={week.total ? (week.done / week.total) * 100 : 0} />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {week.total === 0 ? 'Nothing due Monday–Sunday' : `${week.done} of ${week.total} turned in`}
+              </p>
             </div>
             <div className="rounded-xl bg-muted/60 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Study time</p>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {courses.slice(0, 4).map((c) => {
-            const open = assignments.filter((a) => a.courseId === c.id && a.status !== 'completed').length;
+            const open = assignments.filter((a) => a.courseId === c.id && !isTurnedIn(a)).length;
             const g = courseGrade(c.id, assignments, exams);
             const nextExam = exams.filter((e) => e.courseId === c.id && daysUntil(e.date) >= 0 && e.status !== 'completed').sort((a, b) => a.date.localeCompare(b.date))[0];
             return (

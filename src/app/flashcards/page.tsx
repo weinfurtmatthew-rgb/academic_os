@@ -18,6 +18,7 @@ export default function FlashcardsPage() {
   const [add, setAdd] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [reviewed, setReviewed] = useState(0);
+  const [confirmDelId, setConfirmDelId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => flashcards.filter((f) => fCourse === 'all' || f.courseId === fCourse),
@@ -174,9 +175,23 @@ export default function FlashcardsPage() {
                   <button onClick={() => setEdit(f)} aria-label="Edit card" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
                     <Pencil className="h-4 w-4" />
                   </button>
-                  <button onClick={() => remove('flashcards', f.id)} aria-label="Delete card" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {confirmDelId === f.id ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      autoFocus
+                      onClick={() => remove('flashcards', f.id)}
+                      onBlur={() => setConfirmDelId(null)}
+                      onKeyDown={(e) => e.key === 'Escape' && setConfirmDelId(null)}
+                      aria-label="Confirm delete card"
+                    >
+                      <Trash2 className="h-4 w-4" /> Confirm
+                    </Button>
+                  ) : (
+                    <button onClick={() => setConfirmDelId(f.id)} aria-label="Delete card" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}

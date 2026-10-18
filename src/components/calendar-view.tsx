@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { CalItem } from '@/lib/types';
 import { addDays, cn, fmtTime, hexToRgba, isSameDay, startOfDay, startOfWeek, toDateKey } from '@/lib/utils';
 import { Button } from '@/components/ui';
@@ -15,9 +15,9 @@ const KIND_ICON: Record<CalItem['kind'], string> = {
 };
 
 function Chip({
-  item, draggable, onOpen, onDragStart, compact,
+  item, draggable, onOpen, onDragStart, compact, roomy,
 }: {
-  item: CalItem; draggable: boolean; compact?: boolean;
+  item: CalItem; draggable: boolean; compact?: boolean; roomy?: boolean;
   onOpen: (i: CalItem) => void; onDragStart: (e: React.DragEvent, i: CalItem) => void;
 }) {
   return (
@@ -30,7 +30,8 @@ function Chip({
       }}
       title={`${item.title} · ${fmtTime(item.date)}`}
       className={cn(
-        'flex w-full items-center gap-1 rounded-md px-1.5 py-0.5 text-left text-[11px] font-semibold leading-tight transition-transform hover:scale-[1.02]',
+        'flex w-full items-center gap-1 rounded-md text-left font-semibold leading-tight transition-transform hover:scale-[1.02]',
+        roomy ? 'gap-1.5 px-2.5 py-2 text-sm' : 'px-1.5 py-0.5 text-[11px]',
         item.done && 'opacity-50 line-through',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}
@@ -43,19 +44,27 @@ function Chip({
   );
 }
 
+/** Below Tailwind's `sm` breakpoint the month grid shows dots and a day list instead of chips. */
+const isNarrow = () => typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches;
+
 export function CalendarView({
-  items, onMove, onOpen, onAddAt, initialView = 'month', enableDrag = true,
+  items, onMove, onOpen, onAddAt, addLabel = 'Add', initialView = 'month', enableDrag = true,
 }: {
   items: CalItem[];
   onMove?: (item: CalItem, newDate: Date) => void;
   onOpen: (item: CalItem) => void;
   onAddAt?: (date: Date) => void;
+  /** Button text for `onAddAt` in the phone day list. */
+  addLabel?: string;
   initialView?: CalView;
   enableDrag?: boolean;
 }) {
   const [view, setView] = useState<CalView>(initialView);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [overKey, setOverKey] = useState<string | null>(null);
+  // the day listed under the month grid on phones; follows Today / prev / next
+  const [selected, setSelected] = useState(() => startOfDay(new Date()));
+  useEffect(() => setSelected(cursor), [cursor]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, CalItem[]>();
@@ -189,12 +198,13 @@ export function CalendarView({
                   <div
                     key={k}
                     {...dayCellProps(day)}
-                    onClick={() => onAddAt?.(day)}
+                    onClick={() => (isNarrow() ? setSelected(day) : onAddAt?.(day))}
                     className={cn(
-                      'min-h-[84px] border-r border-border p-1 last:border-r-0 sm:min-h-[104px] sm:p-1.5',
+                      'min-h-[56px] cursor-pointer border-r border-border p-1 last:border-r-0 sm:min-h-[104px] sm:cursor-auto sm:p-1.5',
                       faded && 'bg-muted/30',
                       overKey === k && 'bg-primary/8 ring-2 ring-inset ring-primary/50',
-                      onAddAt && 'cursor-pointer hover:bg-muted/40',
+                      isSameDay(day, selected) && 'max-sm:bg-primary/5 max-sm:ring-2 max-sm:ring-inset max-sm:ring-primary/40',
+                      onAddAt && 'sm:cursor-pointer sm:hover:bg-muted/40',
                     )}
                   >
                     <span
@@ -205,7 +215,7 @@ export function CalendarView({
                     >
                       {day.getDate()}
                     </span>
-                    <div className="mt-0.5 space-y-0.5">
+                    <div className="mt-0.5 hidden space-y-0.5 sm:block">
                       {dayItems.slice(0, 3).map((it) => (
                         <Chip key={`${it.kind}-${it.id}`} item={it} compact draggable={canDrag} onOpen={onOpen} onDragStart={dragStart} />
                       ))}
@@ -213,11 +223,40 @@ export function CalendarView({
                         <p className="px-1 text-[10px] font-semibold text-muted-foreground">+{dayItems.length - 3} more</p>
                       )}
                     </div>
+                    {dayItems.length > 0 && (
+                      <div className="mt-1 flex flex-wrap items-center justify-center gap-0.5 sm:hidden" aria-label={`${dayItems.length} item${dayItems.length === 1 ? '' : 's'}`}>
+                        {dayItems.slice(0, 4).map((it) => (
+                          <span key={`${it.kind}-${it.id}`} className={cn('h-1.5 w-1.5 rounded-full', it.done && 'opacity-40')} style={{ background: it.color }} />
+                        ))}
+                        {dayItems.length > 4 && <span className="text-[9px] font-bold leading-none text-muted-foreground">+</span>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           ))}
+        </div>
+      )}
+
+      {view === 'month' && (
+        <div className="space-y-1.5 sm:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-bold">
+              {selected.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
+            {onAddAt && (
+              <Button variant="outline" size="sm" onClick={() => onAddAt(selected)}>
+                <Plus className="h-3.5 w-3.5" /> {addLabel}
+              </Button>
+            )}
+          </div>
+          {(byDay.get(toDateKey(selected)) ?? []).map((it) => (
+            <Chip key={`${it.kind}-${it.id}`} item={it} roomy draggable={false} onOpen={onOpen} onDragStart={dragStart} />
+          ))}
+          {(byDay.get(toDateKey(selected)) ?? []).length === 0 && (
+            <p className="rounded-xl border border-dashed border-border py-4 text-center text-xs text-muted-foreground">Nothing scheduled</p>
+          )}
         </div>
       )}
 
@@ -281,7 +320,8 @@ export function CalendarView({
       )}
 
       <p className="text-[11px] text-muted-foreground/70">
-        ✓ assignment · ★ exam · ◷ study session{canDrag ? ' — drag items between days to reschedule' : ''}
+        ✓ assignment · ★ exam · ◷ study session
+        {canDrag && <span className="hidden sm:inline"> — drag items between days to reschedule</span>}
       </p>
     </div>
   );

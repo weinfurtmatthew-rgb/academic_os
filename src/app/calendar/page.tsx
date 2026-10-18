@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '@/lib/store';
 import type { Assignment, CalItem, Exam, StudySession } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, isTurnedIn } from '@/lib/utils';
 import { Select } from '@/components/ui';
 import { CalendarView } from '@/components/calendar-view';
 import { AssignmentForm, ExamForm, SessionForm } from '@/components/forms';
@@ -30,7 +30,7 @@ export default function CalendarPage() {
     const out: CalItem[] = [];
     if (kinds.assignment)
       for (const a of assignments)
-        out.push({ id: a.id, kind: 'assignment', title: a.title, date: a.dueDate, color: color(a.courseId), courseId: a.courseId, done: a.status === 'completed' });
+        out.push({ id: a.id, kind: 'assignment', title: a.title, date: a.dueDate, color: color(a.courseId), courseId: a.courseId, done: isTurnedIn(a) });
     if (kinds.exam)
       for (const e of exams)
         out.push({ id: e.id, kind: 'exam', title: e.name, date: e.date, color: color(e.courseId), courseId: e.courseId, done: e.status === 'completed' });
@@ -111,6 +111,7 @@ export default function CalendarPage() {
         items={items}
         onOpen={openItem}
         onMove={moveItem}
+        addLabel="Plan study session"
         onAddAt={(day) => {
           const at = new Date(day);
           at.setHours(18, 0, 0, 0);

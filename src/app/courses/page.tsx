@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LayoutGrid, List, Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
-import { cn, courseGrade, hexToRgba, letterGrade } from '@/lib/utils';
+import { cn, courseGrade, hexToRgba, isTurnedIn, letterGrade } from '@/lib/utils';
 import { Button, EmptyState, Progress } from '@/components/ui';
 import { CourseForm } from '@/components/forms';
 import { CourseDetail } from '@/components/course-detail';
@@ -70,7 +70,7 @@ export default function CoursesPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((c) => {
             const mine = assignments.filter((a) => a.courseId === c.id);
-            const done = mine.filter((a) => a.status === 'completed').length;
+            const done = mine.filter(isTurnedIn).length;
             const pct = mine.length ? Math.round((done / mine.length) * 100) : 0;
             const g = courseGrade(c.id, assignments, exams);
             return (
@@ -101,7 +101,7 @@ export default function CoursesPage() {
       ) : (
         <div className="space-y-2">
           {sorted.map((c) => {
-            const open = assignments.filter((a) => a.courseId === c.id && a.status !== 'completed').length;
+            const open = assignments.filter((a) => a.courseId === c.id && !isTurnedIn(a)).length;
             const g = courseGrade(c.id, assignments, exams);
             return (
               <button
