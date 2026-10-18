@@ -42,6 +42,7 @@ export interface Course {
   schedule: ClassMeeting[];
   resources: Resource[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Assignment {
@@ -61,6 +62,7 @@ export interface Assignment {
   submissionNotes: string;
   attachments: Attachment[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Lecture {
@@ -71,6 +73,7 @@ export interface Lecture {
   summary: string;
   notes: string; // markdown
   attachments: Attachment[];
+  updatedAt?: string;
 }
 
 export interface Exam {
@@ -81,6 +84,7 @@ export interface Exam {
   weight: number; // percent of final grade
   status: ExamStatus;
   grade: number | null; // percent
+  updatedAt?: string;
 }
 
 export interface Note {
@@ -102,6 +106,7 @@ export interface StudySession {
   notes: string;
   done: boolean;
   mood: number | null; // 1-5, logged when a study session ends
+  updatedAt?: string;
 }
 
 export interface Settings {
@@ -109,6 +114,19 @@ export interface Settings {
   gpaScale: number; // 4 | 5 | 10
   semesterStart: string; // yyyy-mm-dd
   semesterEnd: string;
+  /** When a synced setting last changed. Theme is per-device and doesn't count. */
+  updatedAt?: string;
+}
+
+/** Settings copied between devices; the rest (theme) stay per-device. */
+export const SYNCED_SETTINGS = ['gpaScale', 'semesterStart', 'semesterEnd'] as const;
+
+/** Remembers a deletion so sync and import don't bring the record back. */
+export interface Tombstone {
+  key: string; // `${store}:${id}`
+  store: string;
+  id: string;
+  deletedAt: string;
 }
 
 /** Spaced-repetition flashcard (SM-2-lite). */
@@ -124,6 +142,7 @@ export interface Flashcard {
   due: string; // ISO — when the card is next due for review
   lastReviewed: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 /** One freehand / highlighter stroke on a PDF page (normalized 0-1 coords). */

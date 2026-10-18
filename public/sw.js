@@ -1,11 +1,11 @@
 /* Academic OS service worker — offline-first app shell caching. */
-const VERSION = 'aos-v2';
+const VERSION = 'aos-v3';
 const PRECACHE = `${VERSION}-precache`;
 const RUNTIME = `${VERSION}-runtime`;
 
 const ROUTES = [
   '/', '/courses/', '/assignments/', '/lectures/', '/exams/',
-  '/notes/', '/flashcards/', '/planner/', '/grades/', '/calendar/', '/analytics/', '/settings/', '/schedule/', '/study/',
+  '/notes/', '/flashcards/', '/planner/', '/grades/', '/calendar/', '/analytics/', '/settings/', '/schedule/', '/study/', '/sync/',
   '/manifest.json',
 ];
 

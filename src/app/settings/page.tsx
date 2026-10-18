@@ -1,10 +1,12 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Download, Moon, RotateCcw, Sparkles, Sun, SunMoon, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Download, Moon, RefreshCw, RotateCcw, Sparkles, Sun, SunMoon, Upload } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import type { Theme } from '@/lib/types';
-import { cn, downloadText } from '@/lib/utils';
+import { cn, downloadText, fmtDate } from '@/lib/utils';
+import { lastSync } from '@/lib/sync/session';
 import { Button, Card, CardHeader, Input } from '@/components/ui';
 
 export default function SettingsPage() {
@@ -16,7 +18,10 @@ export default function SettingsPage() {
       exams: s.exams.length, notes: s.notes.length, sessions: s.sessions.length,
     },
   }));
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [synced, setSynced] = useState<ReturnType<typeof lastSync>>(null);
+  useEffect(() => setSynced(lastSync()), []);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -35,7 +40,11 @@ export default function SettingsPage() {
     const reader = new FileReader();
     reader.onload = () => {
       const res = importJSON(String(reader.result ?? ''));
-      setMsg(res.ok ? { ok: true, text: 'Data imported and merged.' } : { ok: false, text: res.error ?? 'Import failed.' });
+      setMsg(
+        !res.ok ? { ok: false, text: res.error ?? 'Import failed.' }
+        : res.changed ? { ok: true, text: `Backup merged — ${res.changed} change${res.changed === 1 ? '' : 's'} applied. Anything newer on this device was kept.` }
+        : { ok: true, text: 'Nothing new in that backup — this device is already up to date.' },
+      );
     };
     reader.readAsText(file);
   };
@@ -105,6 +114,15 @@ export default function SettingsPage() {
             </label>
           </div>
         </div>
+      </Card>
+
+      <Card className="p-4">
+        <CardHeader eyebrow="Your devices" title="Sync" />
+        <p className="mb-3 text-sm text-muted-foreground">
+          Copy your changes between your phone and computer, directly over Wi-Fi. No account, and nothing is uploaded.
+          {synced && ` Last synced with ${synced.device} on ${fmtDate(synced.at)}.`}
+        </p>
+        <Button onClick={() => router.push('/sync/')}><RefreshCw className="h-4 w-4" /> Sync devices</Button>
       </Card>
 
       <Card className="p-4">

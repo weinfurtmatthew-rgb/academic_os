@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3, BookOpen, Calendar, CalendarClock, CalendarRange, FileText, GraduationCap, Home,
-  Layers, ListTodo, Menu, Percent, Play, Plus, Presentation, Search, Settings, Timer, X,
+  Layers, ListTodo, Menu, Percent, Play, Plus, Presentation, RefreshCw, Search, Settings, Timer, X,
 } from 'lucide-react';
 import { useStore, type QuickAddKind } from '@/lib/store';
 import { uid, cn } from '@/lib/utils';
@@ -216,7 +216,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="hidden border-t border-border p-4 text-[11px] leading-relaxed text-muted-foreground lg:block">
-          Offline-first · data stays on this device
+          <Link href="/sync/" className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-primary">
+            <RefreshCw className="h-3.5 w-3.5" /> Sync devices
+          </Link>
+          <p>Offline-first · data stays on your devices</p>
         </div>
       </aside>
 
@@ -304,7 +307,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <Fab />
+      {/* hidden mid-sync: it covers the flow's buttons and quick-adding there makes no sense */}
+      {!pathname.startsWith('/sync') && <Fab />}
       <CommandSearch />
       <QuickAddHost />
     </div>

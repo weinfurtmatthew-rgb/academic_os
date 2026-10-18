@@ -1,8 +1,12 @@
 import { create } from 'zustand';
-import { dbBulkPut, dbClear, dbDelete, dbGetAll, dbPut, STORES, type StoreName } from './db';
+import { observe, stamp } from './clock';
+import { dbBulkDelete, dbBulkPut, dbClear, dbDelete, dbGetAll, dbPut, STORES, TOMBSTONES, type StoreName } from './db';
 import { buildSampleData } from './sample-data';
-import type {
-  Assignment, Course, Exam, Flashcard, FocusTarget, Lecture, Note, PdfAnnotationDoc, Settings, StudySession,
+import { planMerge, planSize, tombKey, type MergePlan, type Records, type Side } from './sync/merge';
+import {
+  SYNCED_SETTINGS,
+  type Assignment, type Course, type Exam, type Flashcard, type FocusTarget, type Lecture, type Note,
+  type PdfAnnotationDoc, type Settings, type StudySession, type Tombstone,
 } from './types';
 
 /** Fill in fields added after v1 so old saves keep working. */
@@ -17,6 +21,25 @@ function normalizeSession(x: StudySession): StudySession {
 }
 function normalizeCard(f: Flashcard): Flashcard {
   return { ease: 2.5, intervalDays: 0, reps: 0, lastReviewed: null, ...(f as Partial<Flashcard>) } as Flashcard;
+}
+const NORMALIZE: Partial<Record<StoreName, (x: never) => unknown>> = {
+  courses: normalizeCourse, assignments: normalizeAssignment, sessions: normalizeSession, flashcards: normalizeCard,
+};
+const normalize = (store: StoreName, x: unknown) => (NORMALIZE[store] ? NORMALIZE[store]!(x as never) : x);
+
+/** Keep only known stores and well-formed records from a backup or another device. */
+export function sanitizeSide(records: unknown, tombstones: unknown): Side {
+  const out: Records = {};
+  const src = (records && typeof records === 'object' ? records : {}) as Record<string, unknown>;
+  for (const store of STORES) {
+    const list = src[store];
+    if (Array.isArray(list)) out[store] = list.filter((r) => r && typeof r === 'object' && typeof r.id === 'string');
+  }
+  const tombs = (Array.isArray(tombstones) ? tombstones : []).filter(
+    (t): t is Tombstone =>
+      t && typeof t.id === 'string' && typeof t.deletedAt === 'string' && (STORES as readonly string[]).includes(t.store),
+  ).map((t) => ({ key: tombKey(t.store, t.id), store: t.store, id: t.id, deletedAt: t.deletedAt }));
+  return { records: out, tombstones: tombs };
 }
 
 const SETTINGS_KEY = 'academic-os-settings';
@@ -59,6 +82,8 @@ interface AppState {
   sessions: StudySession[];
   flashcards: Flashcard[];
   annotations: PdfAnnotationDoc[];
+  /** Deletions, kept so sync and import don't bring records back. */
+  tombstones: Tombstone[];
   settings: Settings;
   ui: UIState;
 
@@ -69,7 +94,13 @@ interface AppState {
   setSettings: (patch: Partial<Settings>) => void;
   setUI: (patch: Partial<UIState>) => void;
   exportJSON: () => string;
-  importJSON: (raw: string) => { ok: boolean; error?: string };
+  importJSON: (raw: string) => { ok: boolean; error?: string; changed?: number };
+  /** Everything sync compares: all records plus deletions. */
+  localSide: () => Side;
+  /** Apply a merge from another device or a backup, keeping the incoming stamps. */
+  applyPlan: (plan: MergePlan) => void;
+  /** Take synced settings if they changed more recently there. Returns true if anything changed. */
+  mergeSettings: (remote: Partial<Settings> | undefined) => boolean;
   resetAll: () => Promise<void>;
   loadSample: () => void;
 }
@@ -103,12 +134,13 @@ export const useStore = create<AppState>((set, get) => ({
   sessions: [],
   flashcards: [],
   annotations: [],
+  tombstones: [],
   settings: DEFAULT_SETTINGS,
   ui: { quickAdd: null, searchOpen: false, navOpen: false, focus: null, selectedCourseId: null },
 
   hydrate: async () => {
     if (get().hydrated) return;
-    const [courses, assignments, lectures, exams, notes, sessions, flashcards, annotations] = await Promise.all([
+    const [courses, assignments, lectures, exams, notes, sessions, flashcards, annotations, tombstones] = await Promise.all([
       dbGetAll<Course>('courses'),
       dbGetAll<Assignment>('assignments'),
       dbGetAll<Lecture>('lectures'),
@@ -117,6 +149,7 @@ export const useStore = create<AppState>((set, get) => ({
       dbGetAll<StudySession>('sessions'),
       dbGetAll<Flashcard>('flashcards'),
       dbGetAll<PdfAnnotationDoc>('annotations'),
+      dbGetAll<Tombstone>(TOMBSTONES),
     ]);
     set({
       courses: courses.map(normalizeCourse),
@@ -124,7 +157,7 @@ export const useStore = create<AppState>((set, get) => ({
       lectures, exams, notes,
       sessions: sessions.map(normalizeSession),
       flashcards: flashcards.map(normalizeCard),
-      annotations,
+      annotations, tombstones,
       settings: loadSettings(), hydrated: true,
     });
   },
@@ -136,7 +169,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (a.status === 'completed' && !a.completedAt) a.completedAt = new Date().toISOString();
       if (a.status !== 'completed') a.completedAt = null;
     }
-    if (store === 'notes') (record as unknown as Note).updatedAt = new Date().toISOString();
+    record.updatedAt = stamp();
 
     dbPut(store, record).catch(console.error); // auto-save
     set((s) => {
@@ -150,16 +183,20 @@ export const useStore = create<AppState>((set, get) => ({
 
   remove: (store, id) => {
     dbDelete(store, id).catch(console.error);
-    set((s) => ({ [store]: (s[store] as { id: string }[]).filter((x) => x.id !== id) }) as Partial<AppState>);
+    const t = recordDeletions([{ store, id }]);
+    set((s) => ({ [store]: (s[store] as { id: string }[]).filter((x) => x.id !== id), tombstones: t(s.tombstones) }) as Partial<AppState>);
   },
 
   deleteCourse: (id) => {
     const s = get();
+    const gone: { store: StoreName; id: string }[] = [{ store: 'courses', id }];
     const drop = <T extends { id: string; courseId?: string | null }>(store: StoreName, arr: T[]) => {
       const keep: T[] = [];
       for (const item of arr) {
-        if (item.courseId === id) dbDelete(store, item.id).catch(console.error);
-        else keep.push(item);
+        if (item.courseId === id) {
+          dbDelete(store, item.id).catch(console.error);
+          gone.push({ store, id: item.id });
+        } else keep.push(item);
       }
       return keep;
     };
@@ -171,12 +208,13 @@ export const useStore = create<AppState>((set, get) => ({
     const annotations = s.annotations.filter((a) => {
       if (annIds.has(a.id)) {
         dbDelete('annotations', a.id).catch(console.error);
+        gone.push({ store: 'annotations', id: a.id });
         return false;
       }
       return true;
     });
     dbDelete('courses', id).catch(console.error);
-    set({
+    const next = {
       courses: s.courses.filter((c) => c.id !== id),
       assignments: drop('assignments', s.assignments),
       lectures: drop('lectures', s.lectures),
@@ -185,12 +223,17 @@ export const useStore = create<AppState>((set, get) => ({
       sessions: drop('sessions', s.sessions),
       flashcards: drop('flashcards', s.flashcards),
       annotations,
+    };
+    set({
+      ...next,
+      tombstones: recordDeletions(gone)(s.tombstones),
       ui: { ...s.ui, selectedCourseId: s.ui.selectedCourseId === id ? null : s.ui.selectedCourseId },
     });
   },
 
   setSettings: (patch) => {
-    const next = { ...get().settings, ...patch };
+    const synced = SYNCED_SETTINGS.some((k) => k in patch);
+    const next = { ...get().settings, ...patch, ...(synced ? { updatedAt: stamp() } : {}) };
     saveSettings(next);
     set({ settings: next });
   },
@@ -202,7 +245,7 @@ export const useStore = create<AppState>((set, get) => ({
     return JSON.stringify(
       {
         app: 'academic-os',
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         settings: s.settings,
         data: {
@@ -215,46 +258,82 @@ export const useStore = create<AppState>((set, get) => ({
           flashcards: s.flashcards,
           annotations: s.annotations,
         },
+        tombstones: s.tombstones,
       },
       null,
       2
     );
   },
 
+  // Merges rather than overwrites: anything changed here since the backup was made is kept.
   importJSON: (raw) => {
+    let parsed;
     try {
-      const parsed = JSON.parse(raw);
-      const d = parsed?.data;
-      if (!d || typeof d !== 'object') return { ok: false, error: 'Not an Academic OS backup file.' };
-      const patch: Partial<AppState> = {};
-      for (const store of STORES) {
-        if (Array.isArray(d[store])) {
-          dbBulkPut(store, d[store]).catch(console.error);
-          const existing = get()[store] as { id: string }[];
-          const incoming = d[store] as { id: string }[];
-          const ids = new Set(incoming.map((x) => x.id));
-          (patch as Record<string, unknown>)[store] = [...existing.filter((x) => !ids.has(x.id)), ...incoming];
-        }
-      }
-      if (parsed.settings) {
-        const settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
-        saveSettings(settings);
-        patch.settings = settings;
-      }
-      set(patch);
-      return { ok: true };
+      parsed = JSON.parse(raw);
     } catch {
       return { ok: false, error: 'Could not read that file as JSON.' };
     }
+    const d = parsed?.data;
+    if (!d || typeof d !== 'object') return { ok: false, error: 'Not an Academic OS backup file.' };
+    const plan = planMerge(get().localSide(), sanitizeSide(d, parsed.tombstones));
+    get().applyPlan(plan);
+    const settingsChanged = get().mergeSettings(parsed.settings);
+    return { ok: true, changed: planSize(plan) + (settingsChanged ? 1 : 0) };
+  },
+
+  localSide: () => {
+    const s = get();
+    const records: Records = {};
+    for (const store of STORES) records[store] = s[store] as { id: string; updatedAt?: string }[];
+    return { records, tombstones: s.tombstones };
+  },
+
+  applyPlan: (plan) => {
+    const s = get();
+    const patch: Record<string, unknown> = {};
+    for (const store of STORES) {
+      const incoming = (plan.put[store] ?? []).map((r) => normalize(store, r) as { id: string; updatedAt?: string });
+      const dels = plan.del.filter((x) => x.store === store).map((x) => x.id);
+      if (incoming.length === 0 && dels.length === 0) continue;
+      dbBulkPut(store, incoming).catch(console.error);
+      dbBulkDelete(store, dels).catch(console.error);
+      incoming.forEach((r) => observe(r.updatedAt));
+      const replaced = new Set([...incoming.map((r) => r.id), ...dels]);
+      patch[store] = [...(s[store] as { id: string }[]).filter((x) => !replaced.has(x.id)), ...incoming];
+    }
+    if (plan.tombstones.length) {
+      dbBulkPut(TOMBSTONES, plan.tombstones).catch(console.error);
+      plan.tombstones.forEach((t) => observe(t.deletedAt));
+      const keys = new Set(plan.tombstones.map((t) => t.key));
+      patch.tombstones = [...s.tombstones.filter((t) => !keys.has(t.key)), ...plan.tombstones];
+    }
+    set(patch as Partial<AppState>);
+  },
+
+  mergeSettings: (remote) => {
+    if (!remote || typeof remote !== 'object') return false;
+    const local = get().settings;
+    // backups from before change tracking carry no stamp: they still restore onto an unstamped device
+    const newer = remote.updatedAt ? !local.updatedAt || remote.updatedAt > local.updatedAt : !local.updatedAt;
+    if (!newer) return false;
+    const picked: Partial<Settings> = {};
+    for (const k of SYNCED_SETTINGS) if (remote[k] !== undefined) (picked as Record<string, unknown>)[k] = remote[k];
+    if (Object.keys(picked).length === 0) return false;
+    observe(remote.updatedAt);
+    const settings = { ...local, ...picked, updatedAt: remote.updatedAt ?? local.updatedAt };
+    saveSettings(settings);
+    set({ settings });
+    return SYNCED_SETTINGS.some((k) => settings[k] !== local[k]);
   },
 
   resetAll: async () => {
-    await Promise.all(STORES.map((s) => dbClear(s).catch(() => undefined)));
+    await Promise.all([...STORES.map((s) => dbClear(s).catch(() => undefined)), dbClear(TOMBSTONES).catch(() => undefined)]);
     try {
       localStorage.removeItem(SETTINGS_KEY);
     } catch { /* ignore */ }
     set({
-      courses: [], assignments: [], lectures: [], exams: [], notes: [], sessions: [],
+      courses: [], assignments: [], lectures: [], exams: [], notes: [], sessions: [], flashcards: [], annotations: [],
+      tombstones: [],
       settings: DEFAULT_SETTINGS,
       ui: { quickAdd: null, searchOpen: false, navOpen: false, focus: null, selectedCourseId: null },
     });
@@ -262,14 +341,21 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadSample: () => {
     const d = buildSampleData();
-    (Object.keys(d) as StoreName[]).forEach((store) => dbBulkPut(store, d[store]).catch(console.error));
-    set((s) => ({
-      courses: [...s.courses, ...d.courses],
-      assignments: [...s.assignments, ...d.assignments],
-      lectures: [...s.lectures, ...d.lectures],
-      exams: [...s.exams, ...d.exams],
-      notes: [...s.notes, ...d.notes],
-      sessions: [...s.sessions, ...d.sessions],
-    }));
+    const patch: Record<string, unknown> = {};
+    for (const store of Object.keys(d) as StoreName[]) {
+      const items = (d[store] as object[]).map((x) => ({ ...x, updatedAt: stamp() }));
+      dbBulkPut(store, items).catch(console.error);
+      patch[store] = [...(get()[store] as object[]), ...items];
+    }
+    set(patch as Partial<AppState>);
   },
 }));
+
+/** Persist deletion records; returns an updater for the in-memory list. */
+function recordDeletions(items: { store: StoreName; id: string }[]) {
+  const deletedAt = stamp();
+  const tombs: Tombstone[] = items.map(({ store, id }) => ({ key: tombKey(store, id), store, id, deletedAt }));
+  dbBulkPut(TOMBSTONES, tombs).catch(console.error);
+  const keys = new Set(tombs.map((t) => t.key));
+  return (prev: Tombstone[]) => [...prev.filter((t) => !keys.has(t.key)), ...tombs];
+}

@@ -20,6 +20,7 @@ Your offline-first academic command center — courses, assignments, exams, note
 | **Analytics** | Completion rate, tasks/week, daily & weekly study hours, course performance, GPA trend |
 | **Search** | ⌘K / Ctrl+K palette across everything |
 | **Settings** | Light/dark/system theme, GPA scale, semester dates, JSON export/import, reset |
+| **Sync** | Copy everything between your phone and computer by scanning QR codes — device to device, no account |
 
 Every change **saves automatically** — there is no save button anywhere.
 
@@ -67,9 +68,24 @@ The site must be served from the **root of a domain** (e.g. `academic-os.pages.d
 ## 💾 Your data
 
 - Stored locally: IndexedDB (entities) + LocalStorage (settings). Refreshing, restarting or going offline loses nothing.
-- **Settings → Export JSON** for backups; **Import JSON** merges a backup back in (by id).
+- **Settings → Export JSON** for backups; **Import JSON** merges a backup in: for each item the newer version wins, so anything changed or deleted on this device since the backup stays that way.
 - *Clearing browser site data deletes everything* — export first.
 - New here? **Settings → Load sample data** (or the button on the empty dashboard) fills the app with a realistic semester to explore.
+
+## 🔄 Syncing devices
+
+**Settings → Sync devices** copies everything between two devices, both ways, with no server and no account.
+
+1. Open Sync on both devices. Tap **Start here** on one and scan its QR code with the other.
+2. The second device shows a reply code; scan it with the first.
+3. They connect directly (WebRTC) and swap only what changed, attachments included. For each item the newest edit wins, and deletions carry over.
+
+- Data goes straight between the devices, encrypted by WebRTC. The QR codes hold only connection details. `stun.cloudflare.com` is asked for each device's public address (needed when they're on different networks); it never sees app data.
+- Both devices must have the page open at the same time. Same Wi-Fi works best; campus and public Wi-Fi often block device-to-device connections, so use a phone hotspot there.
+- Every record carries a last-changed stamp from a clock that never runs backwards, so edits made after a sync win even if one device's clock is wrong. Deletions are remembered (tombstones) so they don't come back.
+- Can't scan? Each step has a copy/paste text code.
+
+Run `npm test` for the merge and handshake unit tests.
 
 ## 🛠 Stack
 
