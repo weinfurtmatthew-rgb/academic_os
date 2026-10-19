@@ -6,7 +6,7 @@ import { CalendarPlus, MapPin } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { DAYS, type ClassMeeting, type Course } from '@/lib/types';
 import { cn, hexToRgba } from '@/lib/utils';
-import { Button, Card, EmptyState } from '@/components/ui';
+import { Button, Card, EmptyState, PageHeader } from '@/components/ui';
 
 interface Meeting extends ClassMeeting {
   course: Course;
@@ -81,15 +81,14 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Class Schedule</h1>
-          <p className="text-sm text-muted-foreground">your recurring weekly timetable</p>
-        </div>
-        <Button variant="outline" onClick={() => router.push('/courses/')}>
-          <CalendarPlus className="h-4 w-4" /> Edit in courses
-        </Button>
-      </div>
+      <PageHeader
+        title="Class schedule"
+        actions={
+          <Button variant="outline" onClick={() => router.push('/courses/')}>
+            <CalendarPlus className="h-4 w-4" /> Edit in courses
+          </Button>
+        }
+      />
 
       {meetings.length === 0 ? (
         <EmptyState

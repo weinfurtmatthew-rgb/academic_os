@@ -5,7 +5,7 @@ import { ArrowLeft, FileText, Plus, Search, Trash2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import type { Note } from '@/lib/types';
 import { cn, fmtDate, uid } from '@/lib/utils';
-import { Button, EmptyState, Input, Select, Tabs } from '@/components/ui';
+import { Button, EmptyState, Input, PageHeader, Select, Tabs } from '@/components/ui';
 import { MarkdownEditor } from '@/components/editor';
 
 type Scope = 'all' | 'course' | 'lecture';
@@ -177,7 +177,7 @@ export default function NotesPage() {
   return (
     <div className="animate-fade-in lg:h-[calc(100dvh-7rem)]">
       <div className="mb-3 lg:hidden">
-        {!open && <h1 className="font-display text-2xl font-extrabold tracking-tight">Notes</h1>}
+        {!open && <PageHeader title="Notes" />}
       </div>
       {/* mobile: one pane at a time; desktop: split */}
       <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-[320px,minmax(0,1fr)]">

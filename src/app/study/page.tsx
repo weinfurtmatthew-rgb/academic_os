@@ -10,7 +10,7 @@ import { useStore } from '@/lib/store';
 import type { StudySession } from '@/lib/types';
 import { cn, daysUntil, fmtTime, hexToRgba, isSameDay, isTurnedIn, relDue, studyStreak, uid } from '@/lib/utils';
 import { isDue } from '@/lib/srs';
-import { Button, Card, Dialog, EmptyState, Input, Progress, Select, Stat } from '@/components/ui';
+import { Button, Card, Dialog, EmptyState, Input, PageHeader, Progress, Select, Stat } from '@/components/ui';
 import { SessionRow } from '@/components/shared';
 import { SessionForm } from '@/components/forms';
 import { MarkdownEditor } from '@/components/editor';
@@ -168,10 +168,7 @@ export default function StudyPage() {
 
     return (
       <div className="space-y-5 animate-fade-in">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Study</h1>
-          <p className="text-sm text-muted-foreground">pick a session, hit start, get to work</p>
-        </div>
+        <PageHeader title="Study" />
 
         {justFinished && (
           <Card className="border-success/40 bg-success/5 p-4">

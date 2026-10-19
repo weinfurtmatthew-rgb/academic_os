@@ -8,7 +8,7 @@ import {
   type Assignment, type CalItem, type Priority,
 } from '@/lib/types';
 import { assignmentDue, cn, daysUntil, fmtDate, isOverdue, isTurnedIn, relDue } from '@/lib/utils';
-import { Button, EmptyState, Select, Tabs } from '@/components/ui';
+import { Button, EmptyState, PageHeader, Select, Tabs } from '@/components/ui';
 import { AssignmentRow, PriorityBadge, StatusBadge } from '@/components/shared';
 import { AssignmentForm } from '@/components/forms';
 import { KanbanBoard } from '@/components/kanban';
@@ -104,13 +104,11 @@ export default function AssignmentsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Assignments</h1>
-          <p className="text-sm text-muted-foreground">{open} open · {assignments.length} total</p>
-        </div>
-        <Button onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Assignment</Button>
-      </div>
+      <PageHeader
+        eyebrow={`${open} open · ${assignments.length} total`}
+        title="Assignments"
+        actions={<Button className="hidden md:inline-flex" onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Assignment</Button>}
+      />
 
       <Tabs
         value={view}

@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import type { Exam } from '@/lib/types';
 import { daysUntil } from '@/lib/utils';
-import { Button, EmptyState, Select, Stat } from '@/components/ui';
+import { Button, EmptyState, PageHeader, Select, Stat } from '@/components/ui';
 import { ExamCard } from '@/components/shared';
 import { ExamForm } from '@/components/forms';
 
@@ -42,21 +42,19 @@ export default function ExamsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Exams</h1>
-          <p className="text-sm text-muted-foreground">{upcoming.length} upcoming</p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} className="h-9 w-36 text-xs">
+      <PageHeader
+        eyebrow={`${upcoming.length} upcoming`}
+        title="Exams"
+        actions={<>
+          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} aria-label="Course" className="h-9 w-36 text-xs">
             <option value="all">All courses</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>{c.code}</option>
             ))}
           </Select>
-          <Button onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Exam</Button>
-        </div>
-      </div>
+          <Button className="hidden md:inline-flex" onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Exam</Button>
+        </>}
+      />
 
       {exams.length > 0 && (
         <div className="grid grid-cols-3 gap-3">

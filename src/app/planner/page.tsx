@@ -7,7 +7,7 @@ import type { CalItem, StudySession } from '@/lib/types';
 import {
   addDays, cn, fmtDate, hoursBetween, isSameDay, startOfDay, startOfWeek, studyStreak, toDateKey,
 } from '@/lib/utils';
-import { Button, EmptyState, Stat, Tabs } from '@/components/ui';
+import { Button, EmptyState, PageHeader, Stat, Tabs } from '@/components/ui';
 import { SessionRow } from '@/components/shared';
 import { SessionForm } from '@/components/forms';
 import { CalendarView } from '@/components/calendar-view';
@@ -70,13 +70,11 @@ export default function PlannerPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Study Planner</h1>
-          <p className="text-sm text-muted-foreground">{sessions.length} sessions planned</p>
-        </div>
-        <Button onClick={() => { setAddDate(undefined); setAdd(true); }}><Plus className="h-4 w-4" /> Session</Button>
-      </div>
+      <PageHeader
+        eyebrow={`${sessions.length} sessions planned`}
+        title="Study planner"
+        actions={<Button className="hidden md:inline-flex" onClick={() => { setAddDate(undefined); setAdd(true); }}><Plus className="h-4 w-4" /> Session</Button>}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Total studied" value={`${totalH.toFixed(1)}h`} sub="all time" accent />

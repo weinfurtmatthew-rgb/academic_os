@@ -7,7 +7,7 @@ import { ConnectError, Peer } from '@/lib/sync/peer';
 import { handshakeLink, parseHandshakeText, type HandshakeKind } from '@/lib/sync/handshake';
 import { lastSync, runSync, type SyncProgress, type SyncResult } from '@/lib/sync/session';
 import { fmtDate, fmtTime } from '@/lib/utils';
-import { Button, Card, Progress, Textarea } from '@/components/ui';
+import { Button, Card, PageHeader, Progress, Textarea } from '@/components/ui';
 import { QrCode, QrScanner } from '@/components/qr';
 
 /** How long the second device waits for the first to scan its reply. */
@@ -151,8 +151,8 @@ export default function SyncPage() {
   return (
     <div className="mx-auto max-w-xl space-y-4 animate-fade-in">
       <div>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Sync devices</h1>
-        <p className="text-sm text-muted-foreground">
+        <PageHeader title="Sync devices" />
+        <p className="mt-2 text-sm text-muted-foreground">
           Copy your changes between your phone and computer, directly over Wi-Fi. Nothing is uploaded anywhere.
         </p>
       </div>

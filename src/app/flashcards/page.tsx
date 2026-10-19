@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Layers, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import type { Flashcard } from '@/lib/types';
-import { cn, fmtDate, uid } from '@/lib/utils';
+import { cn, fmtDate } from '@/lib/utils';
 import { GRADES, gradeCard, isDue, isLearned, type ReviewGrade } from '@/lib/srs';
-import { Button, Card, Dialog, EmptyState, FormRow, Select, Stat, Textarea } from '@/components/ui';
+import { Button, Card, EmptyState, PageHeader, Select, Stat } from '@/components/ui';
+import { FlashcardForm } from '@/components/forms';
 import { Markdown } from '@/components/markdown';
 
 export default function FlashcardsPage() {
@@ -64,21 +65,18 @@ export default function FlashcardsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Flashcards</h1>
-          <p className="text-sm text-muted-foreground">spaced repetition — review what’s due, daily</p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} className="h-9 w-36 text-xs">
+      <PageHeader
+        title="Flashcards"
+        actions={<>
+          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} aria-label="Course" className="h-9 w-36 text-xs">
             <option value="all">All courses</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>{c.code}</option>
             ))}
           </Select>
-          <Button onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Card</Button>
-        </div>
-      </div>
+          <Button className="hidden md:inline-flex" onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Card</Button>
+        </>}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Due now" value={due.length} sub={reviewed > 0 ? `${reviewed} reviewed today` : 'tap a grade to schedule'} accent />
@@ -199,93 +197,12 @@ export default function FlashcardsPage() {
         </section>
       )}
 
-      <CardForm
+      <FlashcardForm
         open={add || !!edit}
         onClose={() => { setAdd(false); setEdit(null); }}
         card={edit}
         defaultCourseId={fCourse !== 'all' ? fCourse : undefined}
       />
     </div>
-  );
-}
-
-/* --------------------------------- card form -------------------------------- */
-
-function CardForm({
-  open, onClose, card, defaultCourseId,
-}: { open: boolean; onClose: () => void; card?: Flashcard | null; defaultCourseId?: string }) {
-  const put = useStore((s) => s.put);
-  const courses = useStore((s) => s.courses);
-  const notes = useStore((s) => s.notes);
-
-  const blank = useMemo<Flashcard>(
-    () => ({
-      id: uid(), courseId: defaultCourseId ?? courses[0]?.id ?? null, noteId: null,
-      front: '', back: '', ease: 2.5, intervalDays: 0, reps: 0,
-      due: new Date().toISOString(), lastReviewed: null, createdAt: new Date().toISOString(),
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, defaultCourseId],
-  );
-  const [f, setF] = useState<Flashcard>(card ?? blank);
-  useEffect(() => setF(card ?? blank), [card, blank]);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!f.front.trim() || !f.back.trim()) return;
-    put('flashcards', { ...f, front: f.front.trim(), back: f.back.trim() });
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} title={card ? 'Edit flashcard' : 'New flashcard'}>
-      <form onSubmit={submit} className="space-y-4">
-        <FormRow label="Front (question)">
-          <Textarea
-            autoFocus required rows={3} value={f.front}
-            onChange={(e) => setF({ ...f, front: e.target.value })}
-            placeholder={'Time to build a binary heap?  (markdown + $math$ work)'}
-          />
-        </FormRow>
-        <FormRow label="Back (answer)">
-          <Textarea
-            required rows={3} value={f.back}
-            onChange={(e) => setF({ ...f, back: e.target.value })}
-            placeholder={'$O(n)$ — bottom-up heapify'}
-          />
-        </FormRow>
-        <div className="grid grid-cols-2 gap-3">
-          <FormRow label="Course">
-            <Select value={f.courseId ?? ''} onChange={(e) => setF({ ...f, courseId: e.target.value || null, noteId: null })}>
-              <option value="">No course</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>{c.code}</option>
-              ))}
-            </Select>
-          </FormRow>
-          <FormRow label="Linked note (optional)">
-            <Select value={f.noteId ?? ''} onChange={(e) => setF({ ...f, noteId: e.target.value || null })}>
-              <option value="">None</option>
-              {notes.filter((n) => !f.courseId || n.courseId === f.courseId).map((n) => (
-                <option key={n.id} value={n.id}>{n.title || 'Untitled note'}</option>
-              ))}
-            </Select>
-          </FormRow>
-        </div>
-        {card && (
-          <button
-            type="button"
-            onClick={() => setF({ ...f, ease: 2.5, intervalDays: 0, reps: 0, due: new Date().toISOString(), lastReviewed: null })}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="h-3.5 w-3.5" /> Reset learning progress (due now)
-          </button>
-        )}
-        <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit">Save card</Button>
-        </div>
-      </form>
-    </Dialog>
   );
 }

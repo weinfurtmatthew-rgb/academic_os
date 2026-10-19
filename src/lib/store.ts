@@ -62,12 +62,13 @@ type EntityOf = {
   annotations: PdfAnnotationDoc;
 };
 
-export type QuickAddKind = 'assignment' | 'course' | 'exam' | 'session' | 'lecture';
+export type QuickAddKind = 'assignment' | 'course' | 'exam' | 'session' | 'lecture' | 'flashcard';
 
 interface UIState {
   quickAdd: QuickAddKind | null;
   searchOpen: boolean;
-  navOpen: boolean;
+  /** The phone "+" sheet listing what can be added. */
+  addOpen: boolean;
   focus: FocusTarget;
   selectedCourseId: string | null;
 }
@@ -136,7 +137,7 @@ export const useStore = create<AppState>((set, get) => ({
   annotations: [],
   tombstones: [],
   settings: DEFAULT_SETTINGS,
-  ui: { quickAdd: null, searchOpen: false, navOpen: false, focus: null, selectedCourseId: null },
+  ui: { quickAdd: null, searchOpen: false, addOpen: false, focus: null, selectedCourseId: null },
 
   hydrate: async () => {
     if (get().hydrated) return;
@@ -335,7 +336,7 @@ export const useStore = create<AppState>((set, get) => ({
       courses: [], assignments: [], lectures: [], exams: [], notes: [], sessions: [], flashcards: [], annotations: [],
       tombstones: [],
       settings: DEFAULT_SETTINGS,
-      ui: { quickAdd: null, searchOpen: false, navOpen: false, focus: null, selectedCourseId: null },
+      ui: { quickAdd: null, searchOpen: false, addOpen: false, focus: null, selectedCourseId: null },
     });
   },
 

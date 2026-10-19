@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { LayoutGrid, List, Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { cn, courseGrade, hexToRgba, isTurnedIn, letterGrade } from '@/lib/utils';
-import { Button, EmptyState, Progress } from '@/components/ui';
+import { Button, EmptyState, PageHeader, Progress } from '@/components/ui';
 import { CourseForm } from '@/components/forms';
 import { CourseDetail } from '@/components/course-detail';
 
@@ -33,12 +33,10 @@ export default function CoursesPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Courses</h1>
-          <p className="text-sm text-muted-foreground">{courses.length} enrolled</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        eyebrow={`${courses.length} enrolled`}
+        title="Courses"
+        actions={<>
           <div className="flex rounded-xl border border-border bg-muted p-0.5">
             {([['grid', LayoutGrid], ['list', List]] as const).map(([v, Icon]) => (
               <button
@@ -54,9 +52,9 @@ export default function CoursesPage() {
               </button>
             ))}
           </div>
-          <Button onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Course</Button>
-        </div>
-      </div>
+          <Button className="hidden md:inline-flex" onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Course</Button>
+        </>}
+      />
 
       {courses.length === 0 && (
         <EmptyState

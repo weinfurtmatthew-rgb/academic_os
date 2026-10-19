@@ -69,6 +69,18 @@ export function relDue(iso: string): string {
   return `Due ${fmtDate(iso)}`;
 }
 
+/** Short "how long ago" label: "just now", "5m ago", "3h ago", "2d ago", then a date. */
+export function timeAgo(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return fmtDate(iso);
+}
+
 /** Submitted or completed: nothing left to do before the deadline. */
 export function isTurnedIn(a: Pick<Assignment, 'status'>): boolean {
   return a.status === 'submitted' || a.status === 'completed';

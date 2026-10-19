@@ -5,7 +5,7 @@ import { ArrowLeft, FileDown, Paperclip, Pencil, Plus, Trash2 } from 'lucide-rea
 import { useStore } from '@/lib/store';
 import type { Attachment, Lecture } from '@/lib/types';
 import { fmtDate, fmtTime, hexToRgba, readFileAsDataURL, uid } from '@/lib/utils';
-import { Button, Card, EmptyState, Select } from '@/components/ui';
+import { Button, Card, EmptyState, PageHeader, Select } from '@/components/ui';
 import { LectureForm } from '@/components/forms';
 import { MarkdownEditor } from '@/components/editor';
 
@@ -147,21 +147,20 @@ export default function LecturesPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Lectures</h1>
-          <p className="text-sm text-muted-foreground">{lectures.length} logged</p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} className="h-9 w-36 text-xs">
+      <PageHeader
+        eyebrow={`${lectures.length} logged`}
+        title="Lectures"
+        actions={<>
+          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} aria-label="Course" className="h-9 w-36 text-xs">
             <option value="all">All courses</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>{c.code}</option>
             ))}
           </Select>
+          {/* lectures aren't in the + sheet, so this stays on phones */}
           <Button onClick={() => setAdd(true)}><Plus className="h-4 w-4" /> Lecture</Button>
-        </div>
-      </div>
+        </>}
+      />
 
       {grouped.length === 0 && (
         <EmptyState

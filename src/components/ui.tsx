@@ -64,6 +64,25 @@ export function CardHeader({ title, action, eyebrow }: { title: ReactNode; actio
   );
 }
 
+/* ---------------- Page header ---------------- */
+
+/** Big highlighted page title (an iOS large title on phones) with an optional line above it. */
+export function PageHeader({
+  eyebrow, title, actions, className,
+}: { eyebrow?: ReactNode; title: ReactNode; actions?: ReactNode; className?: string }) {
+  return (
+    <div className={cn('flex flex-wrap items-end justify-between gap-x-3 gap-y-2', className)}>
+      <div className="min-w-0">
+        {eyebrow && <p className="text-[15px] font-semibold text-muted-foreground md:text-sm">{eyebrow}</p>}
+        <h1 className="mt-0.5 font-display text-[34px] font-extrabold leading-[1.1] tracking-tight md:text-3xl">
+          <span className="hl-underline">{title}</span>
+        </h1>
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
 /* ---------------- Form bits ---------------- */
 
 export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '@/lib/store';
 import type { Assignment, CalItem, Exam, StudySession } from '@/lib/types';
 import { cn, isTurnedIn } from '@/lib/utils';
-import { Select } from '@/components/ui';
+import { PageHeader, Select } from '@/components/ui';
 import { CalendarView } from '@/components/calendar-view';
 import { AssignmentForm, ExamForm, SessionForm } from '@/components/forms';
 import { AssignmentDetail } from '@/components/assignment-detail';
@@ -76,35 +76,31 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Calendar</h1>
-          <p className="text-sm text-muted-foreground">everything with a date, in one place</p>
+      <PageHeader title="Calendar" />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1.5">
+          {KIND_META.map((k) => (
+            <button
+              key={k.kind}
+              onClick={() => setKinds((prev) => ({ ...prev, [k.kind]: !prev[k.kind] }))}
+              aria-pressed={kinds[k.kind]}
+              className={cn(
+                'h-9 rounded-full border px-3.5 text-[13px] font-bold transition active:scale-95',
+                kinds[k.kind]
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : 'border-border bg-card text-muted-foreground/60',
+              )}
+            >
+              {k.icon} {k.label}
+            </button>
+          ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1">
-            {KIND_META.map((k) => (
-              <button
-                key={k.kind}
-                onClick={() => setKinds((prev) => ({ ...prev, [k.kind]: !prev[k.kind] }))}
-                className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
-                  kinds[k.kind]
-                    ? 'border-primary/40 bg-primary/10 text-primary'
-                    : 'border-border bg-card text-muted-foreground/60',
-                )}
-              >
-                {k.icon} {k.label}
-              </button>
-            ))}
-          </div>
-          <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} className="h-9 w-32 text-xs">
-            <option value="all">All courses</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>{c.code}</option>
-            ))}
-          </Select>
-        </div>
+        <Select value={fCourse} onChange={(e) => setFCourse(e.target.value)} aria-label="Course" className="h-9 w-32 text-xs">
+          <option value="all">All courses</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>{c.code}</option>
+          ))}
+        </Select>
       </div>
 
       <CalendarView

@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import {
   addDays, courseGrade, gpaTrend, hoursBetween, lastNDays, startOfWeek, studyStreak, toDateKey,
 } from '@/lib/utils';
-import { Card, CardHeader, EmptyState, Stat } from '@/components/ui';
+import { Card, CardHeader, EmptyState, PageHeader, Stat } from '@/components/ui';
 import { BarChart, LineChart } from '@/components/charts';
 
 export default function AnalyticsPage() {
@@ -87,10 +87,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Analytics</h1>
-        <p className="text-sm text-muted-foreground">how your semester is actually going</p>
-      </div>
+      <PageHeader title="Analytics" />
 
       {empty ? (
         <EmptyState

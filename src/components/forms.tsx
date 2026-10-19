@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Trash2, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import {
   ASSIGNMENT_STATUSES, COURSE_COLORS, DAYS, EXAM_STATUSES, PRIORITIES,
-  type Assignment, type ClassMeeting, type Course, type Exam, type Lecture, type StudySession,
+  type Assignment, type ClassMeeting, type Course, type Exam, type Flashcard, type Lecture, type StudySession,
 } from '@/lib/types';
 import { cn, fromLocalInput, toLocalInput, uid } from '@/lib/utils';
 import { Button, Dialog, FormRow, Input, Select, Textarea } from '@/components/ui';
@@ -555,15 +555,99 @@ export function LectureForm({
   );
 }
 
+/* ------------------------------ Flashcard form ----------------------------- */
+
+export function FlashcardForm({
+  open, onClose, card, defaultCourseId,
+}: { open: boolean; onClose: () => void; card?: Flashcard | null; defaultCourseId?: string }) {
+  const put = useStore((s) => s.put);
+  const courses = useStore((s) => s.courses);
+  const notes = useStore((s) => s.notes);
+
+  const blank = useMemo<Flashcard>(
+    () => ({
+      id: uid(), courseId: defaultCourseId ?? courses[0]?.id ?? null, noteId: null,
+      front: '', back: '', ease: 2.5, intervalDays: 0, reps: 0,
+      due: new Date().toISOString(), lastReviewed: null, createdAt: new Date().toISOString(),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, defaultCourseId],
+  );
+  const [f, setF] = useState<Flashcard>(card ?? blank);
+  useEffect(() => setF(card ?? blank), [card, blank]);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!f.front.trim() || !f.back.trim()) return;
+    put('flashcards', { ...f, front: f.front.trim(), back: f.back.trim() });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} title={card ? 'Edit flashcard' : 'New flashcard'}>
+      <form onSubmit={submit} className="space-y-4">
+        <FormRow label="Front (question)">
+          <Textarea
+            autoFocus required rows={3} value={f.front}
+            onChange={(e) => setF({ ...f, front: e.target.value })}
+            placeholder={'Time to build a binary heap?  (markdown + $math$ work)'}
+          />
+        </FormRow>
+        <FormRow label="Back (answer)">
+          <Textarea
+            required rows={3} value={f.back}
+            onChange={(e) => setF({ ...f, back: e.target.value })}
+            placeholder={'$O(n)$ — bottom-up heapify'}
+          />
+        </FormRow>
+        <div className="grid grid-cols-2 gap-3">
+          <FormRow label="Course">
+            <Select value={f.courseId ?? ''} onChange={(e) => setF({ ...f, courseId: e.target.value || null, noteId: null })}>
+              <option value="">No course</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>{c.code}</option>
+              ))}
+            </Select>
+          </FormRow>
+          <FormRow label="Linked note (optional)">
+            <Select value={f.noteId ?? ''} onChange={(e) => setF({ ...f, noteId: e.target.value || null })}>
+              <option value="">None</option>
+              {notes.filter((n) => !f.courseId || n.courseId === f.courseId).map((n) => (
+                <option key={n.id} value={n.id}>{n.title || 'Untitled note'}</option>
+              ))}
+            </Select>
+          </FormRow>
+        </div>
+        {card && (
+          <button
+            type="button"
+            onClick={() => setF({ ...f, ease: 2.5, intervalDays: 0, reps: 0, due: new Date().toISOString(), lastReviewed: null })}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Reset learning progress (due now)
+          </button>
+        )}
+        <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit">Save card</Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
 /* ----------------------------- Quick-add host ------------------------------ */
 /* Mounted once in the app shell; opens whichever dialog ui.quickAdd asks for. */
 
 export function QuickAddHost() {
   const quickAdd = useStore((s) => s.ui.quickAdd);
-  const selectedCourseId = useStore((s) => s.ui.selectedCourseId);
+  const openCourseId = useStore((s) => s.ui.selectedCourseId);
   const setUI = useStore((s) => s.setUI);
   const router = useRouter();
-  const close = () => setUI({ quickAdd: null, selectedCourseId: null });
+  const pathname = usePathname();
+  // adding from inside a course defaults to that course; closing leaves the course open
+  const selectedCourseId = pathname.startsWith('/courses') ? openCourseId : null;
+  const close = () => setUI({ quickAdd: null });
 
   return (
     <>
@@ -571,6 +655,7 @@ export function QuickAddHost() {
       <AssignmentForm open={quickAdd === 'assignment'} onClose={close} defaultCourseId={selectedCourseId || undefined} />
       <ExamForm open={quickAdd === 'exam'} onClose={close} defaultCourseId={selectedCourseId || undefined} />
       <SessionForm open={quickAdd === 'session'} onClose={close} defaultCourseId={selectedCourseId || undefined} />
+      <FlashcardForm open={quickAdd === 'flashcard'} onClose={close} defaultCourseId={selectedCourseId || undefined} />
       <LectureForm
         open={quickAdd === 'lecture'}
         onClose={close}

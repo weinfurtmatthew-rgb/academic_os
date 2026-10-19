@@ -25,6 +25,13 @@ const config: Config = {
         sans: ['"Public Sans Variable"', 'system-ui', 'sans-serif'],
         display: ['"Bricolage Grotesque Variable"', 'system-ui', 'sans-serif'],
       },
+      // tints the components use that aren't in Tailwind's default opacity scale
+      opacity: {
+        8: '0.08',
+        12: '0.12',
+        45: '0.45',
+        85: '0.85',
+      },
       borderRadius: {
         xl: '0.875rem',
         '2xl': '1.125rem',
@@ -43,11 +50,13 @@ const config: Config = {
           from: { opacity: '0', transform: 'scale(0.97)' },
           to: { opacity: '1', transform: 'scale(1)' },
         },
+        'sheet-up': { from: { transform: 'translateY(100%)' }, to: { transform: 'translateY(0)' } },
       },
       animation: {
         'fade-in': 'fade-in 0.18s ease-out',
         'slide-up': 'slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
         'zoom-in': 'zoom-in 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+        'sheet-up': 'sheet-up 0.34s cubic-bezier(0.32, 0.72, 0, 1)',
       },
     },
   },

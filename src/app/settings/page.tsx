@@ -7,7 +7,7 @@ import { useStore } from '@/lib/store';
 import type { Theme } from '@/lib/types';
 import { cn, downloadText, fmtDate } from '@/lib/utils';
 import { lastSync } from '@/lib/sync/session';
-import { Button, Card, CardHeader, Input } from '@/components/ui';
+import { Button, Card, CardHeader, Input, PageHeader } from '@/components/ui';
 
 export default function SettingsPage() {
   const { settings, setSettings, exportJSON, importJSON, resetAll, loadSample, counts } = useStore((s) => ({
@@ -59,10 +59,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-4 animate-fade-in">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Settings</h1>
-        <p className="text-sm text-muted-foreground">everything is stored locally on this device</p>
-      </div>
+      <PageHeader title="Settings" />
 
       <Card className="p-4">
         <CardHeader eyebrow="Appearance" title="Theme" />

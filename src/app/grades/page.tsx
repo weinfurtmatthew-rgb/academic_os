@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import {
   courseGrade, gpaTrend, hexToRgba, letterGrade, overallGPA, percentToPoints, semesterAverage,
 } from '@/lib/utils';
-import { Card, CardHeader, EmptyState, Input, Select } from '@/components/ui';
+import { Card, CardHeader, EmptyState, Input, PageHeader, Select } from '@/components/ui';
 import { LineChart } from '@/components/charts';
 
 export default function GradesPage() {
@@ -28,12 +28,9 @@ export default function GradesPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">Grades</h1>
-          <p className="text-sm text-muted-foreground">weighted averages & GPA, updated live</p>
-        </div>
-        <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+      <PageHeader
+        title="Grades"
+        actions={<label className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
           GPA scale
           <Select
             value={String(settings.gpaScale)}
@@ -44,8 +41,8 @@ export default function GradesPage() {
             <option value="5">5.0</option>
             <option value="10">10.0</option>
           </Select>
-        </label>
-      </div>
+        </label>}
+      />
 
       {/* GPA hero */}
       <div className="grid gap-3 sm:grid-cols-3">

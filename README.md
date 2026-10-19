@@ -8,7 +8,7 @@ Your offline-first academic command center — courses, assignments, exams, note
 
 | Module | What it does |
 |---|---|
-| **Dashboard** | Today widget, 14-day deadline timeline, weekly progress, course overview |
+| **Today** | What's up next, the rest of today (classes, study sessions, deadlines), tomorrow and the week ahead; check things off in place |
 | **Courses** | Grid/list views · per-course hub with Assignments / Lectures / Exams / Notes / Resources tabs |
 | **Assignments** | List · Kanban board (drag & drop) · Calendar · Timeline, with course/due/priority/status filters |
 | **Lectures** | Date-grouped log, summaries, rich markdown notes, image & PDF attachments |
@@ -21,6 +21,7 @@ Your offline-first academic command center — courses, assignments, exams, note
 | **Search** | ⌘K / Ctrl+K palette across everything |
 | **Settings** | Light/dark/system theme, GPA scale, semester dates, JSON export/import, reset |
 | **Sync** | Copy everything between your phone and computer by scanning QR codes — device to device, no account |
+| **On phones** | iPhone-style layout: floating tab bar (Today · Tasks · Calendar · Courses · More) with a + beside it for adding anything |
 
 Every change **saves automatically** — there is no save button anywhere.
 

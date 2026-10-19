@@ -55,6 +55,20 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari zooms the page into any field under 16px when it's focused */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -110,10 +124,33 @@ body {
 .dark .hl-underline {
   background-image: linear-gradient(
     to top,
-    hsl(var(--highlighter) / 0.35) 0%,
-    hsl(var(--highlighter) / 0.35) 38%,
-    transparent 38%
+    hsl(var(--highlighter) / 0.8) 0%,
+    hsl(var(--highlighter) / 0.8) 22%,
+    transparent 22%
   );
+}
+
+/* -------------------------------------------------------- phone lists */
+
+/* iOS grouped list: hairlines between rows, inset past the leading icon (--inset) */
+.list-group > * + * {
+  position: relative;
+}
+.list-group > * + *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--inset, 16px);
+  height: 1px;
+  background: hsl(var(--border));
+  pointer-events: none;
+}
+
+/* course colours as text: pulled toward the ink colour so pale ones (yellow) stay readable */
+.ink {
+  color: var(--ink);
+  color: color-mix(in oklab, var(--ink) 55%, hsl(var(--foreground)));
 }
 
 /* ------------------------------------------------------ rendered markdown */
