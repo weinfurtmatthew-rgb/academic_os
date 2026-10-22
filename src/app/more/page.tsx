@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  BarChart3, BookOpen, CalendarRange, ChevronRight, FileText, Layers, Percent, Presentation, RefreshCw,
+  BarChart3, BookOpen, CalendarRange, ChevronRight, CloudDownload, FileText, Layers, Percent, Presentation, RefreshCw,
   Search, Settings, Timer, Play,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -44,6 +44,7 @@ export default function MorePage() {
           { href: '/lectures/', label: 'Lectures', icon: Presentation, tile: 'bg-[#7C3AED]', value: lectures.length ? String(lectures.length) : undefined },
           { href: '/notes/', label: 'Notes', icon: FileText, tile: 'bg-[#2563EB]', value: notes.length ? String(notes.length) : undefined },
           { href: '/schedule/', label: 'Class schedule', icon: CalendarRange, tile: 'bg-[#0F766E]' },
+          { href: '/canvas/', label: 'Canvas import', icon: CloudDownload, tile: 'bg-[#D9480F]', value: settings.canvasFeedUrl ? 'Connected' : 'Set up' },
         ],
       },
       {
@@ -62,7 +63,7 @@ export default function MorePage() {
       },
     ];
     return g;
-  }, [courses, assignments, exams, lectures, notes, sessions, flashcards, settings.gpaScale, synced]);
+  }, [courses, assignments, exams, lectures, notes, sessions, flashcards, settings.gpaScale, settings.canvasFeedUrl, synced]);
 
   return (
     <div className="mx-auto max-w-xl space-y-5 animate-fade-in">

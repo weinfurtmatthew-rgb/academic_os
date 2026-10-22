@@ -21,6 +21,7 @@ Your offline-first academic command center — courses, assignments, exams, note
 | **Search** | ⌘K / Ctrl+K palette across everything |
 | **Settings** | Light/dark/system theme, GPA scale, semester dates, JSON export/import, reset |
 | **Sync** | Copy everything between your phone and computer by scanning QR codes — device to device, no account |
+| **Canvas import** | Paste your Canvas calendar feed link once; upcoming Canvas assignments land in the right courses and stay in sync each time the app opens |
 | **On phones** | iPhone-style layout: floating tab bar (Today · Tasks · Calendar · Courses · More) with a + beside it for adding anything |
 
 Every change **saves automatically** — there is no save button anywhere.
@@ -110,3 +111,8 @@ Next.js 14 (App Router, static export) · TypeScript (strict) · TailwindCSS · 
 - **Instructor contact & office hours** — every course now stores the instructor's email, phone, office and office hours, plus its weekly meeting pattern, shown on the course page and editable in the course dialog.
 
 Music playback streams from YouTube so it needs an internet connection; everything else (including PDF annotation) works fully offline.
+
+## Canvas import
+
+Canvas doesn't let a web page read its calendar feed directly, so the Cloudflare deployment includes a tiny Worker (`worker/index.ts`) with one route, `/api/canvas-feed`. It only fetches Canvas feed links (`https://<school>/feeds/calendars/user_….ics`), stores nothing, and caches nothing. Everything else is served as static files. On GitHub Pages there is no Worker, so Canvas import shows a message instead.
+

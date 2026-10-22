@@ -4,13 +4,14 @@ import { useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3, BookOpen, Calendar, CalendarRange, FileText, GraduationCap, Layers, LayoutGrid, ListTodo,
+  BarChart3, BookOpen, Calendar, CalendarRange, CloudDownload, FileText, GraduationCap, Layers, LayoutGrid, ListTodo,
   Percent, Play, Plus, Presentation, RefreshCw, Search, Settings, SquareCheckBig, Star, Sun, Timer, X,
 } from 'lucide-react';
 import { useStore, type QuickAddKind } from '@/lib/store';
 import { uid, cn } from '@/lib/utils';
 import { CommandSearch } from '@/components/command-search';
 import { QuickAddHost } from '@/components/forms';
+import { refreshCanvasQuietly } from '@/lib/canvas/client';
 
 const NAV = [
   { href: '/', label: 'Today', icon: Sun },
@@ -26,6 +27,7 @@ const NAV = [
   { href: '/grades/', label: 'Grades', icon: Percent },
   { href: '/calendar/', label: 'Calendar', icon: Calendar },
   { href: '/analytics/', label: 'Analytics', icon: BarChart3 },
+  { href: '/canvas/', label: 'Canvas import', icon: CloudDownload },
   { href: '/settings/', label: 'Settings', icon: Settings },
 ];
 
@@ -218,6 +220,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // pick up new Canvas assignments when the app opens or comes back to the foreground
+  useEffect(() => {
+    if (!hydrated) return;
+    refreshCanvasQuietly();
+    const onShow = () => document.visibilityState === 'visible' && refreshCanvasQuietly();
+    document.addEventListener('visibilitychange', onShow);
+    return () => document.removeEventListener('visibilitychange', onShow);
+  }, [hydrated]);
 
   // service worker (offline support)
   useEffect(() => {

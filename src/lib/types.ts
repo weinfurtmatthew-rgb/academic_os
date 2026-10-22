@@ -114,12 +114,16 @@ export interface Settings {
   gpaScale: number; // 4 | 5 | 10
   semesterStart: string; // yyyy-mm-dd
   semesterEnd: string;
+  /** Canvas calendar feed link (https://…/feeds/calendars/user_….ics), when connected. */
+  canvasFeedUrl?: string;
+  /** Canvas course name → course id here, or 'new' / 'skip'. */
+  canvasCourses?: Record<string, string>;
   /** When a synced setting last changed. Theme is per-device and doesn't count. */
   updatedAt?: string;
 }
 
 /** Settings copied between devices; the rest (theme) stay per-device. */
-export const SYNCED_SETTINGS = ['gpaScale', 'semesterStart', 'semesterEnd'] as const;
+export const SYNCED_SETTINGS = ['gpaScale', 'semesterStart', 'semesterEnd', 'canvasFeedUrl', 'canvasCourses'] as const;
 
 /** Remembers a deletion so sync and import don't bring the record back. */
 export interface Tombstone {

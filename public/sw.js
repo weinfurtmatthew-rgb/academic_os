@@ -1,11 +1,11 @@
 /* Academic OS service worker — offline-first app shell caching. */
-const VERSION = 'aos-v4';
+const VERSION = 'aos-v5';
 const PRECACHE = `${VERSION}-precache`;
 const RUNTIME = `${VERSION}-runtime`;
 
 const ROUTES = [
   '/', '/courses/', '/assignments/', '/lectures/', '/exams/',
-  '/notes/', '/flashcards/', '/planner/', '/grades/', '/calendar/', '/analytics/', '/settings/', '/schedule/', '/study/', '/sync/', '/more/',
+  '/notes/', '/flashcards/', '/planner/', '/grades/', '/calendar/', '/analytics/', '/settings/', '/schedule/', '/study/', '/sync/', '/more/', '/canvas/',
   '/manifest.json',
 ];
 
@@ -29,6 +29,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // live data (the Canvas feed) is never cached
+  if (url.pathname.startsWith('/api/')) return;
 
   // page navigations: network-first, fall back to cache, then app shell
   if (request.mode === 'navigate') {

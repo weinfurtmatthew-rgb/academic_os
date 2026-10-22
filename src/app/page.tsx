@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, Flag, Flame, Play, Plus, Search, Sparkles, Star } from 'lucide-react';
+import { Check, ChevronRight, CloudDownload, Flag, Flame, Play, Plus, Search, Sparkles, Star } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { lastSync } from '@/lib/sync/session';
 import type { Assignment, ClassMeeting, Course, Exam, StudySession } from '@/lib/types';
@@ -292,6 +292,9 @@ export default function TodayPage() {
           <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
             <Button onClick={() => setUI({ quickAdd: 'course' })}>
               <Plus className="h-4 w-4" /> Add your first course
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/canvas/')}>
+              <CloudDownload className="h-4 w-4" /> Import from Canvas
             </Button>
             <Button variant="outline" onClick={loadSample}>
               <Sparkles className="h-4 w-4" /> Explore with sample data
